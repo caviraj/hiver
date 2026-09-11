@@ -1,0 +1,21 @@
+# Configuration for Dataset Ingestion & Brand Filtering (M1.P1.1.F1)
+
+# File Paths
+raw_data_path: "data/raw/twcs.csv"
+processed_data_path: "data/processed/apple_support_raw.parquet"
+
+# Ingestion Settings
+brand_handle: "AppleSupport"
+chunksize: 50000
+encoding: "utf-8"
+encoding_errors: "replace"
+
+# Column Name Mapping (Raw CSV -> Standardized Schema)
+columns:
+  tweet_id: "tweet_id"
+  author_id: "author_id"
+  inbound: "inbound"
+  created_at: "created_at"
+  text: "text"
+  response_tweet_id: "response_tweet_id"
+  in_response_to_tweet_id: "in_response_to_tweet_id"

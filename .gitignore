@@ -48,9 +48,8 @@ htmlcov/
 *.sqlite3
 
 # Data directories (raw / processed datasets)
-data/
-data/raw/
-data/processed/
+/data/
+
 
 # Environment variables & secrets
 .env
