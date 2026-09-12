@@ -75,3 +75,9 @@ class Thread(BaseModel):
     def has_brand_tweet(self) -> bool:
         """Return True if at least one tweet in the thread was authored by a brand (inbound=False)."""
         return any(not t.inbound for t in self.tweets)
+
+    @property
+    def turns(self) -> List[RawTweet]:
+        """Return list of conversational turns (tweets) in the thread."""
+        return self.tweets
+
