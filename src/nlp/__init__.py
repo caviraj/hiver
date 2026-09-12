@@ -12,6 +12,12 @@ __all__ = [
     "preserve_device_entities",
     "mask_entities",
     "mask_thread",
+    "ContextWindowRecord",
+    "DEFAULT_SPEAKER_LABELS",
+    "format_turn",
+    "build_turn_context",
+    "build_thread_contexts",
+    "concatenate_thread_text",
     "run",
 ]
 
@@ -30,6 +36,17 @@ def __getattr__(name: str) -> Any:
         import src.nlp.entity_masking as entity_masking
 
         return getattr(entity_masking, name)
+    if name in {
+        "ContextWindowRecord",
+        "DEFAULT_SPEAKER_LABELS",
+        "format_turn",
+        "build_turn_context",
+        "build_thread_contexts",
+        "concatenate_thread_text",
+    }:
+        import src.nlp.context_concatenation as context_concatenation
+
+        return getattr(context_concatenation, name)
     if name == "run":
         import src.nlp.decontraction as decontraction
 
