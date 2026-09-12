@@ -1,0 +1,27 @@
+# Configuration for Banking77 Transfer-Learning Bootstrap (M2.P2.1.F1)
+
+# Model Settings
+model_name: "distilbert-base-uncased"
+num_labels: 77
+max_length: 64  # Median customer service query is ~12-15 words; 64 tokens covers >99% without wasteful padding
+
+# Optimization & Training
+batch_size: 16
+eval_batch_size: 32
+learning_rate: 0.00002  # 2e-5
+weight_decay: 0.01
+epochs: 3
+warmup_ratio: 0.1
+patience: 2  # Early stopping patience on validation macro-F1
+
+# Dataset & Splits
+dataset_name: "PolyAI/banking77"
+local_dataset_path: null
+val_ratio: 0.15
+seed: 42
+class_weighting: false
+
+# Checkpoints & Artifacts
+checkpoint_dir: "data/models/banking77_encoder"
+metrics_path: "data/models/banking77_metrics.json"
+overwrite: false
