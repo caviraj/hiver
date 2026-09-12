@@ -134,6 +134,7 @@ def filter_brand(
     df: pd.DataFrame,
     brand_handle: Optional[str] = None,
     config_path: Optional[str] = None,
+    expand_threads: bool = True,
 ) -> pd.DataFrame:
     """Filter dataset for tweets matching a specific brand handle.
 
@@ -145,16 +146,19 @@ def filter_brand(
         Brand handle to filter (e.g., 'AppleSupport'). Defaults to brand_handle in config.
     config_path : Optional[str]
         Optional path to YAML config file.
+    expand_threads : bool, default=True
+        Whether to expand brand filtering to include inbound consumer tweets that belong
+        to a conversational thread containing at least one brand-authored tweet.
 
     Returns
     -------
     pd.DataFrame
-        Filtered DataFrame containing tweets for the target brand.
+        Filtered DataFrame containing tweets for the target brand and related thread tweets.
 
     Raises
     ------
     ValueError
-        If 0 tweets match the specified brand handle.
+        If 0 tweets match the specified brand handle or thread criteria.
     """
     config = load_config(config_path)
     target_brand = brand_handle or config.get("brand_handle", "AppleSupport")
@@ -166,11 +170,33 @@ def filter_brand(
         raise ValueError("DataFrame missing required 'author_id' column for brand filtering.")
 
     # Direct match on brand author
-    filtered_df = df.loc[df["author_id"] == target_brand].copy()
+    is_brand_author = df["author_id"] == target_brand
 
-    # TODO(P1.1.F2): In Milestone 1, Phase 1.1, Feature 2 (Conversation Thread Reconstruction),
-    # this brand-only filter will be expanded via graph traversal (in_response_to_tweet_id / response_tweet_id)
-    # to include inbound customer tweets and complete multi-turn conversation threads.
+    # Graph-expanded matching: include inbound==True rows belonging to threads with >=1 brand tweet
+    has_graph_cols = {"response_tweet_id", "in_response_to_tweet_id", "tweet_id"}.issubset(df.columns)
+    if expand_threads and has_graph_cols:
+        from src.data.graph import build_graph, reconstruct_threads
+
+        try:
+            graph = build_graph(df)
+            threads = reconstruct_threads(graph, brand_handle=target_brand)
+            brand_thread_tweet_ids = {t.tweet_id for th in threads for t in th.tweets}
+
+            if "inbound" in df.columns:
+                inbound_series = df["inbound"]
+                if pd.api.types.is_bool_dtype(inbound_series):
+                    is_inbound = inbound_series
+                else:
+                    is_inbound = inbound_series.astype(str).str.strip().str.lower().isin(["true", "1", "t"])
+                mask = is_brand_author | (is_inbound & df["tweet_id"].isin(brand_thread_tweet_ids))
+            else:
+                mask = is_brand_author | df["tweet_id"].isin(brand_thread_tweet_ids)
+            filtered_df = df.loc[mask].copy()
+        except Exception as exc:
+            logger.warning("Graph-expanded brand filtering failed with %s; falling back to direct brand match.", exc)
+            filtered_df = df.loc[is_brand_author].copy()
+    else:
+        filtered_df = df.loc[is_brand_author].copy()
 
     matched_count = len(filtered_df)
     if matched_count == 0:
@@ -179,7 +205,7 @@ def filter_brand(
             "Please verify handle spelling or verify that the raw dataset contains this brand."
         )
 
-    logger.info("Filtered %d tweets for brand '%s'", matched_count, target_brand)
+    logger.info("Filtered %d tweets for brand '%s' (expand_threads=%s)", matched_count, target_brand, expand_threads)
     return filtered_df
 
 
