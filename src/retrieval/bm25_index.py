@@ -8,41 +8,15 @@ import hashlib
 import logging
 from pathlib import Path
 import pickle
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Set, Tuple, Union
 
 from rank_bm25 import BM25Okapi
 
+from src.retrieval.hashing import compute_corpus_hash
 from src.retrieval.schema import RetrievalDocument, RetrievalResult
 from src.retrieval.tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
-
-
-def compute_corpus_hash(documents: List[RetrievalDocument]) -> str:
-    """Compute a deterministic SHA-256 hash representing the corpus content.
-
-    Sorts documents by doc_id to ensure order-invariant hashing across rebuilds.
-
-    Parameters
-    ----------
-    documents : List[RetrievalDocument]
-        List of documents forming the corpus.
-
-    Returns
-    -------
-    str
-        Hex-encoded SHA-256 digest of sorted doc_ids, query_texts, and resolution_texts.
-    """
-    hasher = hashlib.sha256()
-    sorted_docs = sorted(documents, key=lambda d: d.doc_id)
-    for doc in sorted_docs:
-        hasher.update(doc.doc_id.encode("utf-8"))
-        hasher.update(b"\x00")
-        hasher.update(doc.query_text.encode("utf-8"))
-        hasher.update(b"\x00")
-        hasher.update(doc.resolution_text.encode("utf-8"))
-        hasher.update(b"\x00")
-    return hasher.hexdigest()
 
 
 class BM25Index:
@@ -188,6 +162,27 @@ def query_index(
         )
 
     return results
+
+
+def get_corpus_doc_ids(index: BM25Index) -> Set[str]:
+    """Extract the set of document IDs present in the BM25 index.
+
+    Enables cross-track consistency verification (e.g. before Reciprocal Rank Fusion)
+    to confirm BM25 and dense indices were built over identical corpora.
+
+    Parameters
+    ----------
+    index : BM25Index
+        The BM25 retrieval index.
+
+    Returns
+    -------
+    Set[str]
+        Set of document IDs present in the indexed corpus.
+    """
+    if hasattr(index, "corpus") and index.corpus:
+        return {doc.doc_id for doc in index.corpus}
+    return set()
 
 
 def save_index(
