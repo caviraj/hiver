@@ -22,6 +22,19 @@ from src.evaluation.geval_scorer import (
     extract_score_distribution,
     run_geval,
 )
+from src.evaluation.golden_dataset import (
+    GoldenExample,
+    load_golden_set,
+    stratified_sample,
+)
+from src.evaluation.judge_calibration import (
+    JUDGE_DEPLOYMENT_KAPPA_THRESHOLD,
+    CalibrationResult,
+    compute_quadratic_weighted_kappa,
+    discretize_scores,
+    evaluate_judge_calibration,
+)
+from src.evaluation.krippendorff_agreement import compute_krippendorffs_alpha
 from src.evaluation.ragas_evaluator import evaluate_ragas
 from src.evaluation.relevance_judge import (
     judge_relevance,
@@ -53,5 +66,14 @@ __all__ = [
     "extract_score_distribution",
     "compute_weighted_score",
     "run_geval",
+    "GoldenExample",
+    "load_golden_set",
+    "stratified_sample",
+    "compute_krippendorffs_alpha",
+    "discretize_scores",
+    "compute_quadratic_weighted_kappa",
+    "evaluate_judge_calibration",
+    "CalibrationResult",
+    "JUDGE_DEPLOYMENT_KAPPA_THRESHOLD",
 ]
 
