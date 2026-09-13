@@ -1,0 +1,19 @@
+# HITL (Human-in-the-Loop) Value-per-Cost Telemetry Configuration
+# Milestone 7: Business Telemetry & HITL Dynamics - Phase 7.1
+
+# Operational reviewer cost rate ($/minute, e.g., $45/hour = $0.75/min)
+minute_cost_rate: 0.75
+
+# SLA breach penalty rate ($/minute for response delay exceeding SLA target)
+sla_penalty_per_minute: 1.50
+
+# Minimum sample size threshold below which dashboard summaries are flagged as low_confidence
+min_sample_size: 10
+
+# Value weights assigned to caught errors based on their severity level
+severity_weights:
+  low: 10.0
+  medium: 25.0
+  high: 75.0
+  critical: 200.0
+  unknown: 15.0  # Conservative non-zero fallback for missing severity

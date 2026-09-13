@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HITL Telemetry & Value-per-Cost Dynamics | Hiver AI Support</title>
+  <meta name="description" content="Real-time Human-in-the-Loop telemetry dashboard tracking operational review cost, error prevention value, and escalation tier efficiency.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient background lighting effects -->
+  <div class="ambient-glow glow-emerald" aria-hidden="true"></div>
+  <div class="ambient-glow glow-indigo" aria-hidden="true"></div>
+  <div class="ambient-glow glow-cyan" aria-hidden="true"></div>
+
+  <div class="app-wrapper">
+    <!-- Top Navigation / Application Header -->
+    <header class="app-header" role="banner">
+      <div class="brand-group">
+        <div class="logo-badge" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <div class="brand-row">
+            <h1 class="brand-title">HIVER TELEMETRY</h1>
+            <span class="version-tag">M7.P7.1</span>
+          </div>
+          <p class="brand-subtitle">HITL Value-per-Cost Ratio & Human Review Dynamics</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="live-beacon" aria-label="System status: Live connection active">
+          <span class="beacon-dot" aria-hidden="true"></span>
+          <span class="beacon-label">PIPELINE LIVE</span>
+        </div>
+
+        <div class="time-window-selector" role="group" aria-label="Select Telemetry Window">
+          <button type="button" class="window-btn" data-window="24h" aria-pressed="false">24h</button>
+          <button type="button" class="window-btn active" data-window="7d" aria-pressed="true">7d</button>
+          <button type="button" class="window-btn" data-window="30d" aria-pressed="false">30d</button>
+        </div>
+
+        <button type="button" class="action-btn" id="simulate-event-btn" aria-label="Simulate New Escalation Review">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span>Simulate Review</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Formula & Methodology Disclosure Banner -->
+    <section class="formula-banner" role="region" aria-label="Mathematical Specification Notice">
+      <div class="banner-icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+      </div>
+      <div class="banner-text">
+        <strong>Mathematical Specification:</strong>
+        <code>Ratio = Value / Cost</code> where
+        <code>Cost = (Reviewer Mins × $0.75) + Max(0, Delay - Target) × $1.50/min</code> and
+        <code>Value = Severity Weight (Critical: $100 | High: $50 | Med: $20 | Low: $5)</code>.
+        Sample sizes below 10 trigger low-confidence warning flags.
+      </div>
+    </section>
+
+    <!-- Primary KPI Grid -->
+    <section class="kpi-grid" aria-label="Key Performance Indicators">
+      <!-- KPI 1: Value-per-Cost Ratio -->
+      <article class="kpi-card highlight-card" id="card-ratio">
+        <div class="card-header">
+          <span class="card-label">Overall Value/Cost Ratio</span>
+          <span class="badge badge-emerald" id="ratio-verdict-badge">Healthy ROI</span>
+        </div>
+        <div class="kpi-metric-row">
+          <span class="kpi-value fira-num" id="kpi-ratio-value">2.48</span>
+          <span class="kpi-unit">x</span>
+        </div>
+        <div class="card-footer">
+          <div class="threshold-indicator">
+            <div class="threshold-bar">
+              <div class="threshold-fill" id="ratio-fill-bar" style="width: 74%;"></div>
+              <div class="threshold-marker" title="1.0x Breakeven" style="left: 33.33%;"></div>
+            </div>
+            <div class="threshold-labels">
+              <span>0.0x</span>
+              <span class="breakeven-label">1.0x (Breakeven)</span>
+              <span>3.0x+</span>
+            </div>
+          </div>
+          <p class="kpi-caption">Every $1.00 of human review cost preserves <strong id="kpi-ratio-cents">$2.48</strong> in customer value.</p>
+        </div>
+      </article>
+
+      <!-- KPI 2: Total Operational Cost -->
+      <article class="kpi-card" id="card-cost">
+        <div class="card-header">
+          <span class="card-label">Total Operational Cost</span>
+          <span class="icon-chip chip-rose" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path>
+              <path d="M12 18V6"></path>
+            </svg>
+          </span>
+        </div>
+        <div class="kpi-metric-row">
+          <span class="kpi-prefix">$</span>
+          <span class="kpi-value fira-num" id="kpi-cost-value">1,420.50</span>
+        </div>
+        <div class="card-footer">
+          <div class="cost-split">
+            <span class="split-item"><span class="dot dot-amber"></span> Review Labor: <strong id="kpi-cost-labor">$1,025.25</strong></span>
+            <span class="split-item"><span class="dot dot-rose"></span> SLA Penalties: <strong id="kpi-cost-sla">$395.25</strong></span>
+          </div>
+        </div>
+      </article>
+
+      <!-- KPI 3: Total Error Value Preserved -->
+      <article class="kpi-card" id="card-value">
+        <div class="card-header">
+          <span class="card-label">Error Value Preserved</span>
+          <span class="icon-chip chip-emerald" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+          </span>
+        </div>
+        <div class="kpi-metric-row">
+          <span class="kpi-prefix">$</span>
+          <span class="kpi-value fira-num" id="kpi-value-value">3,525.00</span>
+        </div>
+        <div class="card-footer">
+          <div class="value-summary">
+            <span class="value-highlight"><strong id="kpi-errors-caught">48</strong> critical & high errors intercepted</span>
+            <span class="value-sub">preventing major customer escalation</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- KPI 4: Total Reviews & Confidence -->
+      <article class="kpi-card" id="card-volume">
+        <div class="card-header">
+          <span class="card-label">Review Volume & Confidence</span>
+          <span class="badge badge-indigo" id="kpi-confidence-badge">High Confidence</span>
+        </div>
+        <div class="kpi-metric-row">
+          <span class="kpi-value fira-num" id="kpi-reviews-value">64</span>
+          <span class="kpi-unit">reviews</span>
+        </div>
+        <div class="card-footer">
+          <div class="confidence-meter">
+            <div class="meter-text">
+              <span>Sample Size: <strong id="kpi-sample-size">64</strong></span>
+              <span>Min Required: <strong>10</strong></span>
+            </div>
+            <div class="meter-track">
+              <div class="meter-fill" id="kpi-sample-bar" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Analytics Section: Trend Chart & Radial Efficiency Gauge -->
+    <section class="visuals-grid" aria-label="Visual Analytics">
+      <!-- Chart Area: Time Series Trend -->
+      <article class="glass-panel chart-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Value Saved vs Operational Cost Over Time</h2>
+            <p class="panel-description">Daily trajectory of error prevention savings vs human reviewer expenditures</p>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-swatch legend-emerald"></span> Error Value ($)</div>
+            <div class="legend-item"><span class="legend-swatch legend-rose"></span> Review Cost ($)</div>
+            <div class="legend-item"><span class="legend-swatch legend-cyan"></span> Ratio (x)</div>
+          </div>
+        </div>
+
+        <div class="chart-container" id="chart-wrapper">
+          <svg class="trend-svg" id="trend-chart" viewBox="0 0 700 260" preserveAspectRatio="none" aria-label="Telemetry Time Series Chart">
+            <defs>
+              <linearGradient id="emerald-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10B981" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
+              </linearGradient>
+              <linearGradient id="rose-grad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#EF4444" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#EF4444" stop-opacity="0.0"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Background Grid Lines -->
+            <g class="chart-grid">
+              <line x1="40" y1="30" x2="680" y2="30" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+              <line x1="40" y1="85" x2="680" y2="85" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+              <line x1="40" y1="140" x2="680" y2="140" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+              <line x1="40" y1="195" x2="680" y2="195" stroke="rgba(255,255,255,0.06)" stroke-dasharray="4"/>
+              <line x1="40" y1="230" x2="680" y2="230" stroke="rgba(255,255,255,0.12)"/>
+            </g>
+
+            <!-- Area & Line Paths (Populated by JS) -->
+            <path id="path-value-area" class="area-path" fill="url(#emerald-grad)"/>
+            <path id="path-cost-area" class="area-path" fill="url(#rose-grad)"/>
+            <path id="path-value-line" class="line-path line-emerald"/>
+            <path id="path-cost-line" class="line-path line-rose"/>
+            <path id="path-ratio-line" class="line-path line-cyan" stroke-dasharray="3,3"/>
+
+            <!-- Data Point Circles (Populated by JS) -->
+            <g id="chart-points"></g>
+
+            <!-- Scrubber Crosshair -->
+            <line id="scrubber-line" x1="0" y1="20" x2="0" y2="230" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="2" opacity="0"/>
+            <circle id="scrubber-dot-val" r="4" fill="#10B981" stroke="#0B0F19" stroke-width="2" opacity="0"/>
+            <circle id="scrubber-dot-cost" r="4" fill="#EF4444" stroke="#0B0F19" stroke-width="2" opacity="0"/>
+          </svg>
+
+          <!-- Interactive Glass Hover Tooltip -->
+          <div class="chart-tooltip" id="chart-tooltip" role="tooltip" aria-hidden="true">
+            <div class="tooltip-date" id="tooltip-date">Sep 10</div>
+            <div class="tooltip-rows">
+              <div class="tooltip-row"><span class="swatch-mini bg-emerald"></span> Value: <strong id="tooltip-val">$520.00</strong></div>
+              <div class="tooltip-row"><span class="swatch-mini bg-rose"></span> Cost: <strong id="tooltip-cost">$185.50</strong></div>
+              <div class="tooltip-row"><span class="swatch-mini bg-cyan"></span> Ratio: <strong id="tooltip-ratio">2.80x</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-x-axis" id="chart-x-labels">
+          <!-- Populated by JS -->
+        </div>
+      </article>
+
+      <!-- Radial Gauge & Efficiency Summary -->
+      <article class="glass-panel gauge-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Net Efficiency Gauge</h2>
+            <p class="panel-description">HITL investment justification quotient</p>
+          </div>
+        </div>
+
+        <div class="gauge-centerpiece">
+          <div class="gauge-svg-box">
+            <svg class="radial-svg" viewBox="0 0 200 200" aria-label="Circular Efficiency Gauge">
+              <circle class="gauge-bg" cx="100" cy="100" r="78"/>
+              <circle class="gauge-fill" id="radial-gauge-fill" cx="100" cy="100" r="78" stroke-dasharray="490" stroke-dashoffset="150"/>
+            </svg>
+            <div class="gauge-readout">
+              <span class="gauge-num fira-num" id="gauge-display-num">2.48</span>
+              <span class="gauge-label">RATIO</span>
+              <span class="gauge-status" id="gauge-status-badge">OPTIMAL</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gauge-insights">
+          <div class="insight-row">
+            <span class="insight-label">Net Surplus Saved</span>
+            <span class="insight-val text-emerald fira-num" id="gauge-surplus">+$2,104.50</span>
+          </div>
+          <div class="insight-row">
+            <span class="insight-label">Cost per Caught Error</span>
+            <span class="insight-val text-muted fira-num" id="gauge-cost-per-err">$29.59</span>
+          </div>
+          <div class="insight-row">
+            <span class="insight-label">Breakeven Margin</span>
+            <span class="insight-val text-cyan fira-num" id="gauge-margin">+148%</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Escalation Tier Breakdown -->
+    <section class="tier-section" aria-label="Escalation Tier Breakdown">
+      <div class="section-title-group">
+        <h2 class="section-title">Escalation Tier Dissection</h2>
+        <p class="section-desc">Comparing human-in-the-loop economics across triage tiers</p>
+      </div>
+
+      <div class="tier-cards-grid" id="tier-container">
+        <!-- Tier 1 Card -->
+        <article class="glass-panel tier-card" id="tier-card-1">
+          <div class="tier-header">
+            <div class="tier-badge-group">
+              <span class="tier-pill tier-pill-1">TIER 1</span>
+              <span class="tier-name">Frontline & General</span>
+            </div>
+            <span class="tier-ratio-badge badge-emerald" id="t1-ratio-badge">2.95x Ratio</span>
+          </div>
+          <div class="tier-stats">
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Events</span>
+              <span class="tier-stat-num fira-num" id="t1-events">38</span>
+            </div>
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Total Cost</span>
+              <span class="tier-stat-num fira-num" id="t1-cost">$570.00</span>
+            </div>
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Value Saved</span>
+              <span class="tier-stat-num fira-num" id="t1-val">$1,680.00</span>
+            </div>
+          </div>
+          <div class="tier-footer">
+            <span class="tier-note" id="t1-note">High velocity, lower error severity per ticket</span>
+            <span class="confidence-pill pill-green" id="t1-conf">N ≥ 10 Confirmed</span>
+          </div>
+        </article>
+
+        <!-- Tier 2 Card -->
+        <article class="glass-panel tier-card" id="tier-card-2">
+          <div class="tier-header">
+            <div class="tier-badge-group">
+              <span class="tier-pill tier-pill-2">TIER 2</span>
+              <span class="tier-name">Technical Escalation</span>
+            </div>
+            <span class="tier-ratio-badge badge-emerald" id="t2-ratio-badge">2.34x Ratio</span>
+          </div>
+          <div class="tier-stats">
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Events</span>
+              <span class="tier-stat-num fira-num" id="t2-events">19</span>
+            </div>
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Total Cost</span>
+              <span class="tier-stat-num fira-num" id="t2-cost">$550.50</span>
+            </div>
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Value Saved</span>
+              <span class="tier-stat-num fira-num" id="t2-val">$1,290.00</span>
+            </div>
+          </div>
+          <div class="tier-footer">
+            <span class="tier-note" id="t2-note">Moderate review time with critical bug traps</span>
+            <span class="confidence-pill pill-green" id="t2-conf">N ≥ 10 Confirmed</span>
+          </div>
+        </article>
+
+        <!-- Tier 3 Card -->
+        <article class="glass-panel tier-card" id="tier-card-3">
+          <div class="tier-header">
+            <div class="tier-badge-group">
+              <span class="tier-pill tier-pill-3">TIER 3</span>
+              <span class="tier-name">Executive & Critical</span>
+            </div>
+            <span class="tier-ratio-badge badge-amber" id="t3-ratio-badge">1.85x Ratio</span>
+          </div>
+          <div class="tier-stats">
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Events</span>
+              <span class="tier-stat-num fira-num" id="t3-events">7</span>
+            </div>
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Total Cost</span>
+              <span class="tier-stat-num fira-num" id="t3-cost">$300.00</span>
+            </div>
+            <div class="tier-stat-item">
+              <span class="tier-stat-label">Value Saved</span>
+              <span class="tier-stat-num fira-num" id="t3-val">$555.00</span>
+            </div>
+          </div>
+          <div class="tier-footer">
+            <span class="tier-note" id="t3-note">Heavy SLA penalties, highest severity weights</span>
+            <span class="confidence-pill pill-amber" id="t3-conf">Low Sample (N &lt; 10)</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Interactive HITL Scenario Simulator -->
+    <section class="simulator-section" aria-label="Interactive HITL Simulator">
+      <article class="glass-panel sim-panel">
+        <div class="sim-header">
+          <div class="sim-title-group">
+            <div class="sim-icon-box" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="panel-title">Interactive HITL Scenario Calculator</h2>
+              <p class="panel-description">Simulate human reviewer costs, SLA latencies, and error prevention payouts in real-time</p>
+            </div>
+          </div>
+          <button type="button" class="reset-btn" id="sim-reset-btn" aria-label="Reset Calculator Parameters">Reset Defaults</button>
+        </div>
+
+        <div class="sim-body-grid">
+          <!-- Control Sliders -->
+          <div class="sim-controls">
+            <!-- Reviewer Minutes Slider -->
+            <div class="control-block">
+              <div class="control-label-row">
+                <label for="sim-minutes-slider">Reviewer Duration (Minutes):</label>
+                <span class="control-val-badge fira-num" id="sim-minutes-display">12 mins</span>
+              </div>
+              <input type="range" id="sim-minutes-slider" min="1" max="45" value="12" step="1" class="custom-range" aria-valuemin="1" aria-valuemax="45" aria-valuenow="12">
+              <div class="control-hint">Cost rate: $0.75 per minute ($45.00/hr)</div>
+            </div>
+
+            <!-- Response Delay Slider -->
+            <div class="control-block">
+              <div class="control-label-row">
+                <label for="sim-delay-slider">Response Delay vs Target (Minutes):</label>
+                <span class="control-val-badge fira-num" id="sim-delay-display">18 mins (Target 15)</span>
+              </div>
+              <input type="range" id="sim-delay-slider" min="0" max="60" value="18" step="1" class="custom-range" aria-valuemin="0" aria-valuemax="60" aria-valuenow="18">
+              <div class="control-hint">SLA penalty rate: $1.50 per minute beyond 15 mins target</div>
+            </div>
+
+            <!-- Error Caught & Severity Selector -->
+            <div class="control-block">
+              <div class="control-label-row">
+                <label for="sim-severity-select">Caught Error Severity Level:</label>
+                <span class="control-val-badge badge-emerald fira-num" id="sim-value-weight-display">$50.00 Weight</span>
+              </div>
+              <div class="select-wrapper">
+                <select id="sim-severity-select" class="custom-select">
+                  <option value="none">No Error Caught (Clean Review — $0.00)</option>
+                  <option value="low">Low Severity (Cosmetic/Typo — $5.00)</option>
+                  <option value="medium">Medium Severity (Workflow Impediment — $20.00)</option>
+                  <option value="high" selected>High Severity (Incorrect Advice/Escalation — $50.00)</option>
+                  <option value="critical">Critical Severity (Security/Data Loss/Compliance — $100.00)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Output Card -->
+          <div class="sim-output-card">
+            <h3 class="output-card-title">Real-Time Simulation Result</h3>
+
+            <div class="sim-result-kpi">
+              <span class="sim-ratio-num fira-num" id="sim-result-ratio">3.70x</span>
+              <span class="sim-ratio-label">Simulated Value-per-Cost Ratio</span>
+              <span class="badge badge-emerald" id="sim-verdict-tag">High Value Justified</span>
+            </div>
+
+            <div class="sim-breakdown-list">
+              <div class="sim-breakdown-row">
+                <span>Labor Cost:</span>
+                <span class="fira-num" id="sim-labor-cost">$9.00</span>
+              </div>
+              <div class="sim-breakdown-row">
+                <span>SLA Delay Penalty:</span>
+                <span class="fira-num text-rose" id="sim-sla-penalty">+$4.50</span>
+              </div>
+              <div class="sim-breakdown-row sim-total-row">
+                <span>Total Review Cost:</span>
+                <span class="fira-num text-amber" id="sim-total-cost">$13.50</span>
+              </div>
+              <div class="sim-breakdown-row sim-total-row">
+                <span>Value Preserved:</span>
+                <span class="fira-num text-emerald" id="sim-total-val">$50.00</span>
+              </div>
+            </div>
+
+            <div class="sim-progress-box">
+              <div class="sim-bar-label">
+                <span>Cost vs Value Yield</span>
+                <span class="fira-num" id="sim-roi-percent">+270% Surplus</span>
+              </div>
+              <div class="sim-bar-track">
+                <div class="sim-bar-fill" id="sim-bar-fill" style="width: 82%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Recent HITL Review Events Table Stream -->
+    <section class="events-section" aria-label="Recent Review Event Stream">
+      <article class="glass-panel table-panel">
+        <div class="panel-header table-header-flex">
+          <div>
+            <h2 class="panel-title">Audit Log: Recent Review Events</h2>
+            <p class="panel-description">Live stream of reviewed escalations, catch rates, and telemetry outcomes</p>
+          </div>
+          <div class="table-filters">
+            <label for="filter-tier" class="sr-only">Filter by Tier</label>
+            <select id="filter-tier" class="filter-select">
+              <option value="all">All Tiers</option>
+              <option value="tier_1">Tier 1 Only</option>
+              <option value="tier_2">Tier 2 Only</option>
+              <option value="tier_3">Tier 3 Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="events-table">
+            <thead>
+              <tr>
+                <th scope="col">Event ID</th>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Tier</th>
+                <th scope="col">Review Time</th>
+                <th scope="col">SLA Latency</th>
+                <th scope="col">Error Caught</th>
+                <th scope="col">Severity</th>
+                <th scope="col">Op Cost</th>
+                <th scope="col">Value</th>
+                <th scope="col">Ratio</th>
+              </tr>
+            </thead>
+            <tbody id="events-tbody">
+              <!-- Dynamically populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer" role="contentinfo">
+      <div class="footer-left">
+        <span>Hiver AI Support Agent Telemetry Suite</span>
+        <span class="sep">•</span>
+        <span>Milestone 7: Business Telemetry & HITL Dynamics</span>
+      </div>
+      <div class="footer-right">
+        <span>Compliant with WCAG 2.1 AA & UI/UX Pro Max Architecture</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Toast Notification Container for Event Simulation -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
