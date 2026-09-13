@@ -1,0 +1,54 @@
+# Hiver Integration Configuration (M6.P6.1.F1)
+# Configures tag mapping rules, SLA durations (in minutes), and client defaults.
+
+fallback_tag: "Uncategorized"
+
+# Tag mapping:
+# Can be keyed by "{intent_label}:{escalation_tier}" for tier-specific tag lists,
+# or simply by "{intent_label}" as a general default.
+# Note: "Urgent" is always automatically appended when escalation_tier is "critical" or "urgent".
+tag_mapping:
+  Billing_Issue:
+    - "Billing"
+    - "Finance"
+  Hardware_Failure:
+    - "Hardware"
+    - "Technical_Support"
+  Account_Recovery:
+    - "Account_Access"
+    - "Security"
+  Device_Performance_Degradation:
+    - "Performance"
+    - "Device"
+  Software_Update_Failure:
+    - "Software"
+    - "Update_Issue"
+  Outrage_Escalation:
+    - "Escalation"
+    - "Customer_Care"
+  Legal_Threat:
+    - "Legal"
+    - "Compliance"
+  Safety_Hazard:
+    - "Safety"
+    - "Hazard"
+  General_Inquiry:
+    - "General_Support"
+  # Composite intent:tier example
+  "Billing_Issue:critical":
+    - "Billing"
+    - "Finance"
+    - "Executive_Escalation"
+
+# SLA durations in minutes, strictly keyed by escalation_tier ("critical", "urgent", "standard", "none")
+sla_durations:
+  critical: 15     # 15 minutes response SLA for critical escalations
+  urgent: 60       # 1 hour response SLA for urgent issues
+  standard: 240    # 4 hours response SLA for standard queue items
+  none: 1440       # 24 hours (1 day) default SLA for non-escalated threads
+
+client:
+  base_url: "https://api.hiverhq.com/v1"
+  timeout_seconds: 10.0
+  max_retries: 3
+  backoff_factor: 0.5
