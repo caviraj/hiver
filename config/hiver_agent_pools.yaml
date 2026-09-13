@@ -1,0 +1,64 @@
+# Hiver Agent Pools Configuration (M6.P6.3.F1)
+# Configures agent rosters, tiers, pool-level skill tags, and individual agent skill tags.
+
+pools:
+  standard_support:
+    tier: "standard"
+    agent_ids:
+      - "agent_std_1@company.com"
+      - "agent_std_2@company.com"
+      - "agent_std_3@company.com"
+    skill_tags:
+      - "general_support"
+      - "account_access"
+    agent_skills:
+      "agent_std_1@company.com":
+        - "general_support"
+      "agent_std_2@company.com":
+        - "account_access"
+      "agent_std_3@company.com":
+        - "general_support"
+
+  technical_specialist:
+    tier: "urgent"
+    agent_ids:
+      - "agent_tech_1@company.com"
+      - "agent_tech_2@company.com"
+      - "agent_tech_3@company.com"
+    skill_tags:
+      - "hardware_repair"
+      - "software_troubleshooting"
+      - "billing"
+    agent_skills:
+      "agent_tech_1@company.com":
+        - "hardware_repair"
+      "agent_tech_2@company.com":
+        - "software_troubleshooting"
+      "agent_tech_3@company.com":
+        - "billing"
+
+  escalation_critical:
+    tier: "critical"
+    agent_ids:
+      - "agent_crit_legal@company.com"
+      - "agent_crit_safety@company.com"
+      - "agent_crit_retention@company.com"
+    skill_tags:
+      - "legal_liaison"
+      - "safety_lead"
+      - "retention_specialist"
+    agent_skills:
+      "agent_crit_legal@company.com":
+        - "legal_liaison"
+      "agent_crit_safety@company.com":
+        - "safety_lead"
+      "agent_crit_retention@company.com":
+        - "retention_specialist"
+
+intent_to_skill:
+  Legal_Threat: "legal_liaison"
+  Safety_Hazard: "safety_lead"
+  Outrage_Escalation: "retention_specialist"
+  Billing_Issue: "billing"
+  Hardware_Failure: "hardware_repair"
+  Software_Update_Failure: "software_troubleshooting"

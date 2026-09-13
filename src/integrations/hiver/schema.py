@@ -6,6 +6,7 @@ Defines TagConfig, SLAConfig, TriageResult, and custom exceptions.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -49,3 +50,38 @@ class TriageResult(BaseModel):
     tagging_success: bool = Field(default=False, description="Whether the apply_tags operation succeeded.")
     sla_success: bool = Field(default=False, description="Whether the start_sla_timer operation succeeded.")
     errors: List[str] = Field(default_factory=list, description="Error messages from failed sub-operations.")
+
+
+class AssignmentResult(BaseModel):
+    """Result of running auto-assignment and escalation routing on an escalated thread."""
+
+    thread_id: str = Field(..., description="Unique identifier of the Hiver thread.")
+    assignee: Optional[str] = Field(default=None, description="Assigned agent ID or email, if assigned.")
+    pool_name: Optional[str] = Field(default=None, description="Name of the agent pool used for assignment.")
+    strategy_used: Optional[str] = Field(default=None, description="Strategy used: 'round_robin' or 'skill_based'.")
+    success: bool = Field(default=False, description="Whether the assignment operation succeeded.")
+    bypassed: bool = Field(default=True, description="Whether the decision warranted escalation bypass (False if non-escalated).")
+    errors: List[str] = Field(default_factory=list, description="Error or warning messages encountered during assignment.")
+
+
+class HandoffNoteContent(BaseModel):
+    """Structured contents for an internal handoff note assembled upon escalation."""
+
+    thread_id: str = Field(..., description="Unique identifier of the Hiver thread.")
+    escalation_reason: str = Field(..., description="Reason for escalation or bypass.")
+    escalation_tier: str = Field(..., description="Target escalation tier (e.g. tier1, tier2, critical).")
+    predicted_intent: Optional[str] = Field(default=None, description="Predicted intent label if classification ran, else None.")
+    confidence: Optional[float] = Field(default=None, description="Confidence score if classification ran, else None.")
+    retrieved_chunks: List[str] = Field(
+        default_factory=list,
+        description="Top retrieved resolution_text snippets (truncated for scannability).",
+    )
+    draft_response_if_any: Optional[str] = Field(
+        default=None,
+        description="Unsent AI draft response if generated prior to escalation, else None.",
+    )
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when the handoff note was assembled.",
+    )
+

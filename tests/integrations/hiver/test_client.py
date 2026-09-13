@@ -28,6 +28,12 @@ class ConcreteHiverClient(HiverClient):
     def unlock_thread(self, thread_id: str) -> bool:
         return True
 
+    def assign_ticket(self, thread_id: str, assignee_or_tier: str) -> bool:
+        return True
+
+    def append_internal_note(self, thread_id: str, note: str) -> bool:
+        return True
+
 
 # ============================================================================
 # MockHiverClient Tests
@@ -84,29 +90,39 @@ def test_mock_client_exception_injection() -> None:
 # ============================================================================
 
 
-def test_not_implemented_methods_raise_with_clear_milestone_reference() -> None:
-    """Future Hiver methods must raise NotImplementedError pointing to future phases."""
+def test_assign_ticket_is_implemented_and_mock_tracks_it() -> None:
+    """Assignment is a live M6.P6.3 feature rather than a future stub."""
     client = ConcreteHiverClient()
+    assert client.assign_ticket("th_999", "tier_1") is True
 
-    with pytest.raises(NotImplementedError) as exc_assign:
-        client.assign_ticket("th_999", "tier_1")
-    assert "M6.P6.3" in str(exc_assign.value)
-    assert "Ticket Assignment" in str(exc_assign.value)
-
-    with pytest.raises(NotImplementedError) as exc_note:
-        client.append_internal_note("th_999", "Customer escalated")
-    assert "M6.P6.4" in str(exc_note.value)
-    assert "Internal Notes" in str(exc_note.value)
+    mock_client = MockHiverClient()
+    assert mock_client.assign_ticket("th_1", "agent_1@company.com") is True
+    assert mock_client.assigned_tickets["th_1"] == "agent_1@company.com"
 
 
-def test_mock_client_inherits_not_implemented_stubs() -> None:
-    """MockHiverClient inherits the same NotImplementedError stubs."""
-    client = MockHiverClient()
+def test_append_internal_note_is_implemented_and_mock_tracks_it() -> None:
+    """Internal note appending is implemented on ConcreteHiverClient and MockHiverClient."""
+    client = ConcreteHiverClient()
+    assert client.append_internal_note("th_999", "Customer escalated") is True
 
-    with pytest.raises(NotImplementedError, match="M6.P6.3"):
-        client.assign_ticket("th_1", "tier_2")
-    with pytest.raises(NotImplementedError, match="M6.P6.4"):
-        client.append_internal_note("th_1", "note")
+    mock_client = MockHiverClient()
+    assert mock_client.append_internal_note("th_1", "Escalation note content") is True
+    assert mock_client.internal_notes["th_1"] == ["Escalation note content"]
+    assert mock_client.calls[-1] == {
+        "method": "append_internal_note",
+        "thread_id": "th_1",
+        "note": "Escalation note content",
+        "args": {"thread_id": "th_1", "note": "Escalation note content"},
+    }
+
+    # Test failure simulation
+    failing_mock = MockHiverClient(fail_note=True)
+    assert failing_mock.append_internal_note("th_1", "note") is False
+
+    # Test exception simulation
+    error_mock = MockHiverClient(note_exception=RuntimeError("Note API failed"))
+    with pytest.raises(RuntimeError, match="Note API failed"):
+        error_mock.append_internal_note("th_1", "note")
 
 
 # ============================================================================
@@ -386,4 +402,28 @@ def test_hiver_api_client_unlock_thread_failure_returns_false(mock_request: Magi
 
     client = HiverAPIClient(max_retries=2)
     assert client.unlock_thread("th_123") is False
+
+
+@pytest.mark.parametrize("status_code", [200, 201, 204])
+@patch.object(httpx.Client, "request")
+def test_hiver_api_client_append_internal_note_success(mock_request: MagicMock, status_code: int) -> None:
+    """HiverAPIClient append_internal_note returns True on 200, 201, or 204."""
+    req = httpx.Request("POST", "https://api.hiverhq.com/v1/threads/th_123/notes")
+    mock_request.return_value = httpx.Response(status_code, text="Created", request=req)
+
+    client = HiverAPIClient()
+    assert client.append_internal_note("th_123", "Test note") is True
+    mock_request.assert_called_once()
+    _, kwargs = mock_request.call_args
+    assert kwargs["url"] == "https://api.hiverhq.com/v1/threads/th_123/notes"
+    assert kwargs["json"] == {"note": "Test note"}
+
+
+@patch.object(httpx.Client, "request")
+def test_hiver_api_client_append_internal_note_failure(mock_request: MagicMock) -> None:
+    """HiverAPIClient append_internal_note returns False on network error."""
+    mock_request.side_effect = httpx.NetworkError("Network down")
+
+    client = HiverAPIClient(max_retries=2)
+    assert client.append_internal_note("th_123", "Test note") is False
 

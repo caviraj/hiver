@@ -73,21 +73,31 @@ class HiverClient(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def assign_ticket(self, thread_id: str, assignee_or_tier: str) -> bool:
         """Assign a thread to an agent or functional tier queue.
 
-        Note:
-            Scheduled for implementation in Milestone 6, Phase 6.3 (Ticket Assignment & Queue Routing).
-        """
-        raise NotImplementedError("assign_ticket is not implemented in M6.P6.1; see M6.P6.3 for Ticket Assignment")
+        Args:
+            thread_id: Unique identifier for the Hiver thread.
+            assignee_or_tier: User ID, email, or functional tier identifier to assign to.
 
+        Returns:
+            True if assignment was successful, False otherwise.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def append_internal_note(self, thread_id: str, note: str) -> bool:
         """Append an internal note or handoff summary to a thread.
 
-        Note:
-            Scheduled for implementation in Milestone 6, Phase 6.4 (Internal Notes & Handoff Summaries).
+        Args:
+            thread_id: Unique identifier for the Hiver thread.
+            note: Plain-text content of the internal note.
+
+        Returns:
+            True if note was appended successfully, False otherwise.
         """
-        raise NotImplementedError("append_internal_note is not implemented in M6.P6.1; see M6.P6.4 for Internal Notes")
+        raise NotImplementedError
 
 
 class HiverAPIClient(HiverClient):
@@ -101,6 +111,8 @@ class HiverAPIClient(HiverClient):
           - POST {base_url}/threads/{thread_id}/sla -> {"duration_minutes": duration_minutes}
           - POST {base_url}/threads/{thread_id}/lock -> acquire lock
           - POST {base_url}/threads/{thread_id}/unlock -> release lock
+          - POST {base_url}/threads/{thread_id}/assign -> {"assignee": assignee_or_tier}
+          - POST {base_url}/threads/{thread_id}/notes -> {"note": note}
         These should be validated and adjusted against official Hiver API documentation
         when live API credentials are provisioned.
     """
@@ -287,6 +299,46 @@ class HiverAPIClient(HiverClient):
             logger.error("Failed to unlock thread %s: %s", thread_id, exc)
             return False
 
+    def assign_ticket(self, thread_id: str, assignee_or_tier: str) -> bool:
+        """Assign ticket to an agent or tier via Hiver API.
+
+        Calls POST /threads/{thread_id}/assign with {"assignee": assignee_or_tier}.
+
+        Args:
+            thread_id: Unique identifier of the Hiver thread.
+            assignee_or_tier: Agent identifier (email/username) or tier name.
+
+        Returns:
+            True if assignment succeeded (200/201/204), False otherwise.
+        """
+        endpoint = f"/threads/{thread_id}/assign"
+        payload = {"assignee": assignee_or_tier}
+        try:
+            resp = self._execute_with_retry("POST", endpoint, json_data=payload)
+            return resp.status_code in (200, 201, 204)
+        except Exception as exc:
+            logger.error("Failed to assign thread %s to %s: %s", thread_id, assignee_or_tier, exc)
+            return False
+
+    def append_internal_note(self, thread_id: str, note: str) -> bool:
+        """Append an internal note or handoff summary to a Hiver thread via the REST API.
+
+        Args:
+            thread_id: Unique identifier of the Hiver thread.
+            note: Plain-text note content to append.
+
+        Returns:
+            True if the note was appended successfully (200/201/204), False otherwise.
+        """
+        endpoint = f"/threads/{thread_id}/notes"
+        payload = {"note": note}
+        try:
+            resp = self._execute_with_retry("POST", endpoint, json_data=payload)
+            return resp.status_code in (200, 201, 204)
+        except Exception as exc:
+            logger.error("Failed to append internal note to thread %s: %s", thread_id, exc)
+            return False
+
 
 class MockHiverClient(HiverClient):
     """In-memory mock Hiver client recording all calls and supporting test-controlled outcomes."""
@@ -297,10 +349,14 @@ class MockHiverClient(HiverClient):
         fail_sla: bool = False,
         fail_lock: bool = False,
         fail_unlock: bool = False,
+        fail_assign: bool = False,
+        fail_note: bool = False,
         tagging_exception: Optional[Exception] = None,
         sla_exception: Optional[Exception] = None,
         lock_exception: Optional[Exception] = None,
         unlock_exception: Optional[Exception] = None,
+        assign_exception: Optional[Exception] = None,
+        note_exception: Optional[Exception] = None,
         already_locked_threads: Optional[set[str]] = None,
     ) -> None:
         """Initialize MockHiverClient.
@@ -310,10 +366,14 @@ class MockHiverClient(HiverClient):
             fail_sla: If True, start_sla_timer returns False.
             fail_lock: If True, lock_thread returns False.
             fail_unlock: If True, unlock_thread returns False.
+            fail_assign: If True, assign_ticket returns False.
+            fail_note: If True, append_internal_note returns False.
             tagging_exception: Optional exception to raise when apply_tags is called.
             sla_exception: Optional exception to raise when start_sla_timer is called.
             lock_exception: Optional exception to raise when lock_thread is called.
             unlock_exception: Optional exception to raise when unlock_thread is called.
+            assign_exception: Optional exception to raise when assign_ticket is called.
+            note_exception: Optional exception to raise when append_internal_note is called.
             already_locked_threads: Optional initial set of thread_ids treated as already locked.
         """
         self.calls: List[Dict[str, Any]] = []
@@ -321,11 +381,17 @@ class MockHiverClient(HiverClient):
         self.fail_sla = fail_sla
         self.fail_lock = fail_lock
         self.fail_unlock = fail_unlock
+        self.fail_assign = fail_assign
+        self.fail_note = fail_note
         self.tagging_exception = tagging_exception
         self.sla_exception = sla_exception
         self.lock_exception = lock_exception
         self.unlock_exception = unlock_exception
+        self.assign_exception = assign_exception
+        self.note_exception = note_exception
         self.locked_threads: set[str] = set(already_locked_threads) if already_locked_threads else set()
+        self.assigned_tickets: Dict[str, str] = {}
+        self.internal_notes: Dict[str, List[str]] = {}
 
     def apply_tags(self, thread_id: str, tags: Sequence[str]) -> bool:
         """Record call and return simulated outcome."""
@@ -378,4 +444,34 @@ class MockHiverClient(HiverClient):
         if self.fail_unlock:
             return False
         self.locked_threads.discard(thread_id)
+        return True
+
+    def assign_ticket(self, thread_id: str, assignee_or_tier: str) -> bool:
+        """Record call and return simulated outcome."""
+        self.calls.append({
+            "method": "assign_ticket",
+            "thread_id": thread_id,
+            "assignee_or_tier": assignee_or_tier,
+            "args": {"thread_id": thread_id, "assignee_or_tier": assignee_or_tier},
+        })
+        if self.assign_exception:
+            raise self.assign_exception
+        if self.fail_assign:
+            return False
+        self.assigned_tickets[thread_id] = assignee_or_tier
+        return True
+
+    def append_internal_note(self, thread_id: str, note: str) -> bool:
+        """Record call and return simulated outcome."""
+        self.calls.append({
+            "method": "append_internal_note",
+            "thread_id": thread_id,
+            "note": note,
+            "args": {"thread_id": thread_id, "note": note},
+        })
+        if self.note_exception:
+            raise self.note_exception
+        if self.fail_note:
+            return False
+        self.internal_notes.setdefault(thread_id, []).append(note)
         return True
