@@ -1,0 +1,22 @@
+models:
+  - type: main
+    engine: mock_llm
+    model: mock-model
+
+instructions:
+  - type: general
+    content: |
+      You are an Apple customer support assistant. You only assist with Apple products and services.
+      Never discuss politics or compare Apple products to competitors.
+
+rails:
+  input:
+    flows:
+      - check input topic boundary
+  dialog:
+    flows:
+      - monitor topic continuity
+  output:
+    flows:
+      - check output competitor mentions
+      - check output warranty commitments

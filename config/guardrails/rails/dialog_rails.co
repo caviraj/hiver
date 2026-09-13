@@ -1,0 +1,12 @@
+# Dialog Rails Flow Definition
+# Enforces state machine logic and topic continuity per conversation.
+
+define flow monitor topic continuity
+  user ...
+  $abrupt_shift = execute check_abrupt_topic_shift
+  if $abrupt_shift
+    bot clarify topic transition
+    stop
+
+define bot clarify topic transition
+  "It seems we were working on troubleshooting your device. Would you like to continue with that or switch topics?"

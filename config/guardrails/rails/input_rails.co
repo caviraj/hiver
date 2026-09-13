@@ -1,0 +1,35 @@
+# Input Rails Flow Definition
+# Enforces topic boundaries before reaching the main generation layer.
+
+define user ask political topic
+  "Who should I vote for in the election?"
+  "What is your opinion on the government policy?"
+  "Which political party is better?"
+  "What do you think about the president?"
+  "Discuss political issues"
+  "Tell me about foreign policy"
+
+define user ask competitor comparison
+  "Is Samsung better than iPhone?"
+  "Compare iPhone with Google Pixel"
+  "Should I buy a OnePlus or an iPhone?"
+  "Why is Xiaomi cheaper than Apple?"
+  "How does Huawei compare to Apple?"
+
+define flow check input topic boundary
+  user ...
+  $is_political = execute check_political_discourse
+  if $is_political
+    bot inform restricted political topic
+    stop
+
+  $is_competitor = execute check_competitor_comparison
+  if $is_competitor
+    bot inform restricted competitor topic
+    stop
+
+define bot inform restricted political topic
+  "I can only help with Apple product support — let's focus on that!"
+
+define bot inform restricted competitor topic
+  "I can only help with Apple product support — let's focus on that!"

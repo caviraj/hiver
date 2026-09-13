@@ -1,0 +1,20 @@
+# Output Rails Flow Definition
+# Enforces output filtering before LLM response is returned to user.
+
+define flow check output competitor mentions
+  $has_competitor = execute check_output_for_competitor
+  if $has_competitor
+    bot inform competitor mention blocked
+    stop
+
+define flow check output warranty commitments
+  $has_unqualified_commitment = execute check_output_for_warranty_commitment
+  if $has_unqualified_commitment
+    bot inform warranty commitment blocked
+    stop
+
+define bot inform competitor mention blocked
+  "I am dedicated to providing information on Apple products and services."
+
+define bot inform warranty commitment blocked
+  "For specific warranty terms and legal coverage, please refer to Apple's official warranty documentation or contact Apple Support directly."

@@ -1,0 +1,18 @@
+# Restricted Topics & Competitors Configuration
+# Source of truth for NeMo Guardrails Topic & Competitor boundaries.
+# Extensible at runtime without modifying Colang rail files.
+
+restricted_categories:
+  - political_discourse
+  - competitor_comparison
+
+competitor_names:
+  - Samsung
+  - Google Pixel
+  - OnePlus
+  - Xiaomi
+  - Huawei
+  - Motorola
+  - Oppo
+  - Vivo
+  - Sony Xperia
