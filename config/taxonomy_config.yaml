@@ -1,0 +1,52 @@
+# Configuration for Taxonomy Induction & Domain-Adapted Fine-Tuning (M2.P2.2.F1)
+
+# Embedding & Clustering (HDBSCAN)
+min_cluster_size: 20
+min_samples: 5
+metric: "euclidean"
+cluster_selection_method: "eom"
+
+# Taxonomy Induction & Labeling
+seed_labels:
+  - "Device_Performance_Degradation"
+  - "Software_Update_Failure"
+  - "Account_Recovery"
+  - "Outrage_Escalation"
+max_representative_texts: 10
+purity_threshold: 0.7
+min_surviving_classes: 3
+other_label: "Other_Uncategorized"
+unclassified_label: "Unclassified"
+
+# Severity Rules
+severity_keywords:
+  - "lawyer"
+  - "attorney"
+  - "sue"
+  - "lawsuit"
+  - "legal action"
+  - "fire hazard"
+  - "caught fire"
+  - "battery explosion"
+  - "exploded"
+  - "injured"
+  - "burn"
+  - "hospital"
+
+# Domain Adaptation & Training
+encoder_checkpoint_dir: "data/models/banking77_encoder"
+domain_checkpoint_dir: "data/models/domain_adapted_encoder"
+taxonomy_path: "data/models/apple_taxonomy.json"
+metrics_path: "data/models/domain_adapted_metrics.json"
+
+batch_size: 16
+eval_batch_size: 32
+learning_rate: 0.00002  # 2e-5
+weight_decay: 0.01
+epochs: 3
+warmup_ratio: 0.1
+patience: 2
+val_ratio: 0.15
+test_ratio: 0.15
+seed: 42
+overwrite: false
