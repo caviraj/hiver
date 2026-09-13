@@ -49,13 +49,29 @@ class HiverClient(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def lock_thread(self, thread_id: str) -> bool:
         """Acquire an agent collision detection lock on a thread.
 
-        Note:
-            Scheduled for implementation in Milestone 6, Phase 6.2 (Collision Detection).
+        Args:
+            thread_id: Unique identifier for the Hiver thread.
+
+        Returns:
+            True if lock was successfully acquired, False if already locked by another agent or failed.
         """
-        raise NotImplementedError("lock_thread is not implemented in M6.P6.1; see M6.P6.2 for Collision Detection")
+        raise NotImplementedError
+
+    @abstractmethod
+    def unlock_thread(self, thread_id: str) -> bool:
+        """Release an agent collision detection lock on a thread.
+
+        Args:
+            thread_id: Unique identifier for the Hiver thread.
+
+        Returns:
+            True if lock was successfully released, False otherwise.
+        """
+        raise NotImplementedError
 
     def assign_ticket(self, thread_id: str, assignee_or_tier: str) -> bool:
         """Assign a thread to an agent or functional tier queue.
@@ -83,6 +99,8 @@ class HiverAPIClient(HiverClient):
         Assumed endpoints:
           - POST {base_url}/threads/{thread_id}/tags -> {"tags": list(tags)}
           - POST {base_url}/threads/{thread_id}/sla -> {"duration_minutes": duration_minutes}
+          - POST {base_url}/threads/{thread_id}/lock -> acquire lock
+          - POST {base_url}/threads/{thread_id}/unlock -> release lock
         These should be validated and adjusted against official Hiver API documentation
         when live API credentials are provisioned.
     """
@@ -146,9 +164,10 @@ class HiverAPIClient(HiverClient):
                     if response.status_code in (200, 201, 204):
                         return response
 
-                    if response.status_code == 409:
+                    if response.status_code in (409, 423):
                         logger.warning(
-                            "Hiver returned 409 Conflict for %s %s (idempotent/already processed): %s",
+                            "Hiver returned %d for %s %s (conflict/locked/already processed): %s",
+                            response.status_code,
                             method,
                             endpoint,
                             response.text,
@@ -187,7 +206,7 @@ class HiverAPIClient(HiverClient):
                             continue
                         response.raise_for_status()
 
-                    # Client errors (4xx other than 409/429) should fail fast without retrying
+                    # Client errors (4xx other than 409/423/429) should fail fast without retrying
                     response.raise_for_status()
 
                 except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as exc:
@@ -208,8 +227,8 @@ class HiverAPIClient(HiverClient):
 
                 except httpx.HTTPStatusError as exc:
                     last_exception = exc
-                    # Client errors (< 500 and != 429) fail fast immediately without retrying
-                    if exc.response.status_code < 500 and exc.response.status_code != 429:
+                    # Client errors (< 500 and != 429 and not 409/423) fail fast immediately without retrying
+                    if exc.response.status_code < 500 and exc.response.status_code not in (409, 423, 429):
                         raise
                     if attempt >= self.max_retries - 1:
                         raise
@@ -240,6 +259,34 @@ class HiverAPIClient(HiverClient):
             logger.error("Failed to start SLA timer for thread %s: %s", thread_id, exc)
             return False
 
+    def lock_thread(self, thread_id: str) -> bool:
+        """Acquire lock on a thread via assumed Hiver API endpoint.
+
+        Returns:
+            True if 200/201/204, False if 409/423 (collision detected) or failure.
+        """
+        endpoint = f"/threads/{thread_id}/lock"
+        try:
+            resp = self._execute_with_retry("POST", endpoint)
+            return resp.status_code in (200, 201, 204)
+        except Exception as exc:
+            logger.error("Failed to lock thread %s: %s", thread_id, exc)
+            return False
+
+    def unlock_thread(self, thread_id: str) -> bool:
+        """Release lock on a thread via assumed Hiver API endpoint.
+
+        Returns:
+            True if 200/201/204, False on failure.
+        """
+        endpoint = f"/threads/{thread_id}/unlock"
+        try:
+            resp = self._execute_with_retry("POST", endpoint)
+            return resp.status_code in (200, 201, 204)
+        except Exception as exc:
+            logger.error("Failed to unlock thread %s: %s", thread_id, exc)
+            return False
+
 
 class MockHiverClient(HiverClient):
     """In-memory mock Hiver client recording all calls and supporting test-controlled outcomes."""
@@ -248,22 +295,37 @@ class MockHiverClient(HiverClient):
         self,
         fail_tagging: bool = False,
         fail_sla: bool = False,
+        fail_lock: bool = False,
+        fail_unlock: bool = False,
         tagging_exception: Optional[Exception] = None,
         sla_exception: Optional[Exception] = None,
+        lock_exception: Optional[Exception] = None,
+        unlock_exception: Optional[Exception] = None,
+        already_locked_threads: Optional[set[str]] = None,
     ) -> None:
         """Initialize MockHiverClient.
 
         Args:
             fail_tagging: If True, apply_tags returns False.
             fail_sla: If True, start_sla_timer returns False.
+            fail_lock: If True, lock_thread returns False.
+            fail_unlock: If True, unlock_thread returns False.
             tagging_exception: Optional exception to raise when apply_tags is called.
             sla_exception: Optional exception to raise when start_sla_timer is called.
+            lock_exception: Optional exception to raise when lock_thread is called.
+            unlock_exception: Optional exception to raise when unlock_thread is called.
+            already_locked_threads: Optional initial set of thread_ids treated as already locked.
         """
         self.calls: List[Dict[str, Any]] = []
         self.fail_tagging = fail_tagging
         self.fail_sla = fail_sla
+        self.fail_lock = fail_lock
+        self.fail_unlock = fail_unlock
         self.tagging_exception = tagging_exception
         self.sla_exception = sla_exception
+        self.lock_exception = lock_exception
+        self.unlock_exception = unlock_exception
+        self.locked_threads: set[str] = set(already_locked_threads) if already_locked_threads else set()
 
     def apply_tags(self, thread_id: str, tags: Sequence[str]) -> bool:
         """Record call and return simulated outcome."""
@@ -289,3 +351,31 @@ class MockHiverClient(HiverClient):
         if self.sla_exception:
             raise self.sla_exception
         return not self.fail_sla
+
+    def lock_thread(self, thread_id: str) -> bool:
+        """Record call and return simulated outcome."""
+        self.calls.append({
+            "method": "lock_thread",
+            "thread_id": thread_id,
+            "args": {"thread_id": thread_id},
+        })
+        if self.lock_exception:
+            raise self.lock_exception
+        if self.fail_lock or thread_id in self.locked_threads:
+            return False
+        self.locked_threads.add(thread_id)
+        return True
+
+    def unlock_thread(self, thread_id: str) -> bool:
+        """Record call and return simulated outcome."""
+        self.calls.append({
+            "method": "unlock_thread",
+            "thread_id": thread_id,
+            "args": {"thread_id": thread_id},
+        })
+        if self.unlock_exception:
+            raise self.unlock_exception
+        if self.fail_unlock:
+            return False
+        self.locked_threads.discard(thread_id)
+        return True
