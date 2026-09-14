@@ -1,0 +1,4 @@
+# Telemetry & Containment Configuration
+csat_threshold: 4.0
+repeat_contact_window_hours: 48
+intent_similarity_threshold: 0.7
